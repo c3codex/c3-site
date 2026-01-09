@@ -1,0 +1,58 @@
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL!,
+  import.meta.env.VITE_SUPABASE_ANON_KEY!
+);
+
+export default function SignTest() {
+  const [out, setOut] = useState<any>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // If you're already logged into your app, this will exist.
+        // If not, you can temporarily enable email magic link or password login.
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+
+        if (!token) {
+          throw new Error(
+            "No session token found. Log into the app first (any Supabase Auth method) then refresh this page."
+          );
+        }
+
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/measures-sign`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({
+              paths: ["Epithet3_original.jpg"],
+              expiresIn: 900,
+            }),
+          }
+        );
+
+        const json = await res.json();
+        setOut(json);
+      } catch (e: any) {
+        setErr(e?.message ?? String(e));
+      }
+    })();
+  }, []);
+
+  return (
+    <main style={{ padding: 24 }}>
+      <h1>Signer Test</h1>
+      {err && <pre style={{ whiteSpace: "pre-wrap" }}>{err}</pre>}
+      {out && <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(out, null, 2)}</pre>}
+    </main>
+  );
+}
