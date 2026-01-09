@@ -1,7 +1,7 @@
 // src/pages/measures/MeasuresFrontmatter.tsx
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import frontmatter from "./Frontmatter.md?raw";
+import frontmatter from "./measures-frontmatter.md?raw";
 
 export default function MeasuresFrontmatter() {
   const nav = useNavigate();
