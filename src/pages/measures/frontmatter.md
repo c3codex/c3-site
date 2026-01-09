@@ -1,5 +1,5 @@
-# Measures of Inanna  
-## An Exhibition in Three Movements
+ Measures of Inanna  
+ An Exhibition in Three Movements
 
 Measures of Inanna is the work.  
 Descent, Epithets, and Mandala Expressions are its measures.
