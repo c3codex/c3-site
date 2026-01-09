@@ -12,31 +12,25 @@ import IntroducingPage from "@/pages/IntroducingPage";
 import ConnectPage from "@/pages/c3/ConnectPage";
 import ContributePage from "@/pages/c3/ContributePage";
 import CreatePage from "@/pages/c3/CreatePage";
-// import RestorePage from "@/pages/restore/RestorePage";
 import ArtistsPage from "@/pages/artists/ArtistsPage";
+import RestorePage from "@/pages/restore/RestorePage";
 
 // measures
-import ObsidianGatePlate from "@/pages/measures/gates/ObsidianGatePlate";
-
-// ...
-
-<Route path="/measures" element={<MeasuresLayout />}>
-  {/* ... */}
-  <Route path="gates/:gateId" element={<ObsidianGatePlate />} />
-</Route>
 import TempleHome from "@/pages/measures/MeasuresTempleHome";
 import ObsidianGateIntro from "@/pages/measures/gates/ObsidianGateIntro";
+import ObsidianGatePlate from "@/pages/measures/gates/ObsidianGatePlate";
 import CrystalGateIntro from "@/pages/measures/epithets/CrystalGateIntro";
 import MarbleGateIntro from "@/pages/measures/mes/MarbleGateIntro";
-import PlatePage from "@/pages/measures/PlatePage";
-import RestorePage from "./pages/restore/RestorePage";
-import ObsidianGatesIndex from "./pages/measures/gates/ObsidianGatesIndex";
+
+// other
+import NotFound from "@/pages/NotFound";
+// ✅ use alias import (matches the rest of the project)
+import MeasuresFrontmatter from "@/pages/measures/MeasuresFrontmatter";
+
 const App: React.FC = () => {
   return (
     <AppProvider>
       <Routes>
-        
-
         {/* PORTAL — no header */}
         <Route path="/" element={<HomePage />} />
 
@@ -46,18 +40,62 @@ const App: React.FC = () => {
 
           {/* c3 pillar */}
           <Route path="/c3">
-            <Route index element={<ConnectPage onNavigate={function (): void {
-              throw new Error("Function not implemented.");
-            } } />} />
-            <Route path="connect" element={<ConnectPage onNavigate={function (id: string): void {
-              throw new Error("Function not implemented.");
-            } } />} />
-            <Route path="contribute" element={<ContributePage onNavigate={function (id: "connect" | "contribute" | "create" | "home" | "restore" | "measures"): void {
-              throw new Error("Function not implemented.");
-            } } />} />
-            <Route path="create" element={<CreatePage onNavigate={function (id: "connect" | "contribute" | "create" | "home" | "restore" | "measures"): void {
-              throw new Error("Function not implemented.");
-            } } />} />
+            <Route
+              index
+              element={
+                <ConnectPage
+                  onNavigate={function (): void {
+                    throw new Error("Function not implemented.");
+                  }}
+                />
+              }
+            />
+            <Route
+              path="connect"
+              element={
+                <ConnectPage
+                  onNavigate={function (id: string): void {
+                    throw new Error("Function not implemented.");
+                  }}
+                />
+              }
+            />
+            <Route
+              path="contribute"
+              element={
+                <ContributePage
+                  onNavigate={function (
+                    id:
+                      | "connect"
+                      | "contribute"
+                      | "create"
+                      | "home"
+                      | "restore"
+                      | "measures"
+                  ): void {
+                    throw new Error("Function not implemented.");
+                  }}
+                />
+              }
+            />
+            <Route
+              path="create"
+              element={
+                <CreatePage
+                  onNavigate={function (
+                    id:
+                      | "connect"
+                      | "contribute"
+                      | "create"
+                      | "home"
+                      | "restore"
+                      | "measures"
+                  ): void {
+                    throw new Error("Function not implemented.");
+                  }}
+                />
+              }
+            />
           </Route>
 
           {/* restore */}
@@ -68,21 +106,25 @@ const App: React.FC = () => {
         </Route>
 
         {/* MEASURES — sealed temple */}
-        <Route path="/measures" element={<MeasuresLayout />}>
-          <Route index element={<TempleHome />} />
-          <Route path="gates" element={<ObsidianGateIntro />} />
-          <Route path="gates" element={<ObsidianGatesIndex />} />
-          <Route path="gates/intro" element={<ObsidianGateIntro />} />
-          <Route path="epithets" element={<CrystalGateIntro />} />
-          <Route path="mes" element={<MarbleGateIntro />} />
-    
-         {/* Obsidian gate plates (Option 1: /measures/gates/gate1) */}
-           <Route path="gates/:gateId" element={<ObsidianGatePlate />} />
+<Route path="/measures" element={<MeasuresLayout />}>
+  <Route index element={<TempleHome />} />
 
-          <Route path="epithets/:plateId" element={<PlatePage section={"gates"} />} />
-          <Route path="mes/:plateId" element={<PlatePage section={"gates"} />} />
-        </Route>
+  {/* frontmatter */}
+  <Route path="frontmatter" element={<MeasuresFrontmatter />} />
 
+  {/* Obsidian entry = Kumarrah passage -> index overlay */}
+  <Route path="gates" element={<ObsidianGateIntro />} />
+
+  {/* Plates */}
+  <Route path="gates/:gateId" element={<ObsidianGatePlate />} />
+
+  {/* Later (optional, keep if you want routes live) */}
+  <Route path="epithets" element={<CrystalGateIntro />} />
+  <Route path="mes" element={<MarbleGateIntro />} />
+</Route>
+
+        {/* FALLBACK */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AppProvider>
   );

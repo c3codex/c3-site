@@ -2,78 +2,100 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import ReturnGlyph from "@/components/measures/ReturnGlyph";
+import ClickToViewReveal from "@/components/measures/ClickToReveal";
 import { MEASURES_ASSETS } from "@/pages/measures/measuresAssets";
+import ClickToReveal from "@/components/measures/ClickToReveal";
 
-type GateId = "gate1" | "gate2" | "gate3" | "gate4" | "gate5" | "gate6" | "gate7";
+type GateId =
+  | "gate1"
+  | "gate2"
+  | "gate3"
+  | "gate4"
+  | "gate5"
+  | "gate6"
+  | "gate7";
 
 const AUTO_STATIC_AFTER_MS = 5000;
 
-// Gate 1 attribute text (you asked this to appear after settle)
-const GATE_ATTRIBUTES: Record<string, { title?: string; text: string }> = {
-  gate1: {
-    title: "Gate 1 — Inanna Queen of Heaven and Earth",
-    text:
-      "From the Great Above she opened her ear to the Great Below.\n" +
-      "Inanna abandoned heaven and earth to descend to the underworld,\n" +
-      "and then she prepared herself…",
-  },
-};
+// Gate attribute text (shown after settle)
+const GATE_ATTRIBUTES: Partial<Record<GateId, { title?: string; text: string }>> =
+  {
+    gate1: {
+      title: "Gate 1 — Inanna Queen of Heaven and Earth",
+      text:
+        "From the Great Above she opened her ear to the Great Below.\n" +
+        "Inanna abandoned heaven and earth to descend to the underworld,\n" +
+        "and then she prepared herself…",
+    },
+  };
 
 export default function ObsidianGatePlate() {
   const nav = useNavigate();
-  
-// was: /measures/gates/gate1
-const gateRoute = (n: number) => `/measures/gates/${n}`;
-
   const { gateId } = useParams<{ gateId: string }>();
   const id = (gateId ?? "gate1") as GateId;
 
-  // Right now we only have gate1 wired in assets. Others stay sealed.
-  const gate1 = MEASURES_ASSETS.gates?.obsidian?.gate1;
+  // Correct asset location: gates.obsidian.plates[gateId]
+  const plate =
+    MEASURES_ASSETS.gates.obsidian.plates[
+      id as keyof typeof MEASURES_ASSETS.gates.obsidian.plates
+    ] ?? null;
 
-  const enabled = id === "gate1" && !!gate1;
+  // For now, only gate1 is open until you populate the rest
+  const enabled = id === "gate1" && !!plate;
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [mode, setMode] = useState<"video" | "static">("video");
   const [readyText, setReadyText] = useState(false);
 
-  const stillSrc = useMemo(() => {
-    if (!enabled) return "";
-    return gate1.still;
-  }, [enabled, gate1]);
+  const animatedSrc = useMemo(
+    () => (enabled && plate?.animated ? plate.animated : ""),
+    [enabled, plate]
+  );
 
-  const animatedSrc = useMemo(() => {
-    if (!enabled) return "";
-    return gate1.animated;
-  }, [enabled, gate1]);
+  const stillSrc = useMemo(
+    () => (enabled && plate?.still ? plate.still : ""),
+    [enabled, plate]
+  );
 
-  const originalSrc = useMemo(() => {
-    if (!enabled) return "";
-    return gate1.original;
-  }, [enabled, gate1]);
+  const originalSrc = useMemo(
+    () => (enabled && plate?.original ? plate.original : ""),
+    [enabled, plate]
+  );
 
-  // settle to static after delay
+  // Animated (autoplay once) -> after 5s: pause/reset video + fade to static -> text appears
   useEffect(() => {
     if (!enabled) return;
 
     setMode("video");
     setReadyText(false);
 
-    // slow it down slightly (ceremonial)
     if (videoRef.current) {
       videoRef.current.playbackRate = 0.85;
+
+      // restart clean
+      try {
+        videoRef.current.currentTime = 0;
+        void videoRef.current.play();
+      } catch {
+        // ignore autoplay edge cases
+      }
     }
 
     const t = window.setTimeout(() => {
+      // stop the video once we go static (so it doesn't run behind the veil)
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+
       setMode("static");
-      // slight pause before text appears so it feels like a breath
       window.setTimeout(() => setReadyText(true), 380);
     }, AUTO_STATIC_AFTER_MS);
 
     return () => window.clearTimeout(t);
   }, [enabled, id]);
 
-  // If sealed (gate2..7), show a clean “sealed” plate.
+  // Sealed view for gates not yet populated
   if (!enabled) {
     return (
       <main className="min-h-screen bg-obsidian px-6 py-16">
@@ -88,7 +110,8 @@ const gateRoute = (n: number) => `/measures/gates/${n}`;
           <div className="mt-12 rounded-2xl border border-white/10 bg-black/25 p-10">
             <h1 className="font-serif text-3xl text-stone-100">Sealed</h1>
             <p className="mt-3 font-sans text-sm text-stone-400 max-w-2xl">
-              This gate is not open yet. Return to the index and proceed in order.
+              This gate is not open yet. Return to the index and proceed in
+              order.
             </p>
 
             <div className="mt-8 flex gap-3">
@@ -138,15 +161,16 @@ const gateRoute = (n: number) => `/measures/gates/${n}`;
           >
             {/* square stage */}
             <div className="relative aspect-square w-full">
-              {/* video */}
+              {/* animated reveal */}
               <video
                 ref={videoRef}
                 className="absolute inset-0 h-full w-full object-contain"
                 autoPlay
                 muted
-                loop
                 playsInline
                 preload="auto"
+                loop={false}
+                controls={false}
               >
                 <source src={animatedSrc} type="video/mp4" />
               </video>
@@ -181,27 +205,19 @@ const gateRoute = (n: number) => `/measures/gates/${n}`;
                   attribute
                 </div>
 
-                {attribute.title ? (
+                {attribute?.title ? (
                   <h1 className="mt-3 font-serif text-3xl text-stone-100">
                     {attribute.title}
                   </h1>
                 ) : null}
 
-                <p className="mt-4 font-sans text-sm md:text-base text-stone-300/85 whitespace-pre-line max-w-3xl">
-                  {attribute.text}
-                </p>
+                {attribute?.text ? (
+                  <p className="mt-4 font-sans text-sm md:text-base text-stone-300/85 whitespace-pre-line max-w-3xl">
+                    {attribute.text}
+                  </p>
+                ) : null}
 
                 <div className="mt-10 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => nav("/measures/gates/1")}
-                    className="rounded-full border border-white/15 bg-black/25 px-6 py-3
-                               font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/80
-                               hover:text-stone-100 hover:border-white/25 transition"
-                  >
-                    open plate
-                  </button>
-
                   <button
                     type="button"
                     onClick={() => nav("/measures/gates")}
@@ -213,28 +229,20 @@ const gateRoute = (n: number) => `/measures/gates/${n}`;
                   </button>
                 </div>
 
-                {/* Nested original (soft-protected: no drag, no context menu) */}
-                <div className="mt-12">
-                  <div className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/40">
-                    original (nested)
-                  </div>
-
-                  <div
-                    className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/15"
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    <img
-                      src={originalSrc}
-                      alt=""
-                      draggable={false}
-                      className="w-full h-auto block opacity-95"
-                    />
-                  </div>
-
-                  <p className="mt-3 font-sans text-xs text-stone-400 max-w-3xl">
-                    (Viewing only.) This work remains protected in the field.
-                  </p>
-                </div>
+                {/* Nested original — click-to-view with close/re-veil */}
+                {originalSrc ? (
+                  <ClickToReveal
+                    src={originalSrc}
+                    label="original (nested)"
+                    openTitle="Nested view"
+                    openBody="Tap to reveal the original plate."
+                    confirmOpenBody="Tap again to reveal."
+                    closeTitle="Close view"
+                    closeBody="Tap to veil again."
+                    confirmCloseBody="Tap again to close."
+                    aspect="aspect-square"
+                  />
+                ) : null}
               </div>
 
               {!readyText ? (

@@ -1,15 +1,19 @@
+// src/pages/measures/MeasuresTempleHome.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MEASURES_ASSETS } from "@/pages/measures/measuresAssets";
 
 const AUTO_STATIC_AFTER = 5000;
 
+// localStorage key so temple animation doesn't replay every return
+const TEMPLE_SEEN_KEY = "measures:temple_seen";
+
 // staged timing per zone (ms)
 const ZONE_TIMING = {
   gates: { showRing: 120, showLabel: 420 },
   epithets: { showRing: 120, showLabel: 420 },
   mes: { showRing: 120, showLabel: 420 },
-  exit: { showRing: 120, showLabel: 700 }, // linger a touch longer
+  exit: { showRing: 120, showLabel: 520 }, // gentle linger
 } as const;
 
 type ZoneId = keyof typeof ZONE_TIMING;
@@ -40,21 +44,45 @@ export default function TempleHome() {
     timers.current = [];
   };
 
-  // auto swap to static after a few seconds
-  useEffect(() => {
-    const t = window.setTimeout(() => setMode("static"), AUTO_STATIC_AFTER);
-    return () => window.clearTimeout(t);
-  }, []);
-
   // ceremonial slow
   useEffect(() => {
     if (!videoRef.current) return;
     videoRef.current.playbackRate = 0.8;
   }, []);
 
-  // pause video once static arrives
+  // FIRST LOAD vs RETURN:
+  // - if temple was seen before, jump straight to static (no replay)
+  // - otherwise play once, then swap to static and persist "seen"
   useEffect(() => {
-    if (mode === "static") videoRef.current?.pause();
+    const seen = window.localStorage.getItem(TEMPLE_SEEN_KEY) === "1";
+
+    if (seen) {
+      setMode("static");
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+      return;
+    }
+
+    const t = window.setTimeout(() => {
+      setMode("static");
+      window.localStorage.setItem(TEMPLE_SEEN_KEY, "1");
+    }, AUTO_STATIC_AFTER);
+
+    return () => window.clearTimeout(t);
+  }, []);
+
+  // pause + reset video once static arrives
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    if (mode === "static") {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    } else {
+      videoRef.current.play().catch(() => {});
+    }
   }, [mode]);
 
   const beginZone = (id: ZoneId) => {
@@ -84,16 +112,29 @@ export default function TempleHome() {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-obsidian">
-      {/* STAGE (square, large) */}
+      {/* LOCATION / WHERE AM I (only after settle) */}
+      <div
+        className={`absolute left-5 top-5 z-30 transition-opacity duration-300 ${
+          isStatic ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <div className="rounded-full border border-white/10 bg-black/25 px-4 py-2 backdrop-blur">
+          <span className="font-sans text-[10px] tracking-[0.34em] uppercase text-stone-200/70">
+            measures temple — choose a threshold
+          </span>
+        </div>
+      </div>
+
+      {/* STAGE */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative aspect-square h-[98vh] max-h-[98vh] w-[min(98vh,98vw)]">
           {/* video */}
           <video
             ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain"
             autoPlay
             muted
-            loop
+            loop={false}
             playsInline
             preload="auto"
           >
@@ -117,34 +158,38 @@ export default function TempleHome() {
         </div>
 
         {/* vignette */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(0,0,0,0.00),rgba(0,0,0,0.50)_72%,rgba(0,0,0,0.86)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(0,0,0,0.00),rgba(0,0,0,0.55)_72%,rgba(0,0,0,0.86)_100%)]" />
       </div>
 
-      {/* ZONES (only active in static mode) */}
+      {/* ZONES */}
       <div className="relative z-10 min-h-screen">
-        {/* ZONE WRAPPER aligned to the stage */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative aspect-square h-[96vh] max-h-[96vh] w-[min(96vh,98vw)]">
-            {/* TOP: Obsidian Gate */}
+            {/* TOP — Obsidian */}
             <div
-              className={`${isStatic ? "pointer-events-auto" : "pointer-events-none"}
-                          absolute left-1/2 -translate-x-1/2 top-[10%] w-[42%] h-[14%]`}
+              className={`${
+                isStatic ? "pointer-events-auto" : "pointer-events-none"
+              } absolute left-1/2 -translate-x-1/2 top-[8%] w-[44%] h-[16%]`}
               onMouseEnter={() => beginZone("gates")}
               onMouseLeave={() => endZone("gates")}
             >
               <ZonePill
                 ringOn={ringOn.gates}
                 labelOn={labelOn.gates}
-                label="enter obsidian gate"
-                tone="obsidian"
-                onClick={() => nav("/measures/gates")}
+                label="enter obsidian gates"
+                onClick={() =>
+                  nav("/measures/frontmatter", {
+                    state: { next: "/measures/gates" },
+                  })
+                }
               />
             </div>
 
-            {/* LEFT: Crystal Gate */}
+            {/* LEFT — Crystal */}
             <div
-              className={`${isStatic ? "pointer-events-auto" : "pointer-events-none"}
-                          absolute left-[6%] top-1/2 -translate-y-1/2 w-[18%] h-[40%]`}
+              className={`${
+                isStatic ? "pointer-events-auto" : "pointer-events-none"
+              } absolute left-[6%] top-1/2 -translate-y-1/2 w-[18%] h-[42%]`}
               onMouseEnter={() => beginZone("epithets")}
               onMouseLeave={() => endZone("epithets")}
             >
@@ -152,15 +197,15 @@ export default function TempleHome() {
                 ringOn={ringOn.epithets}
                 labelOn={labelOn.epithets}
                 label="crystal epithets"
-                tone="crystal"
                 onClick={() => nav("/measures/epithets")}
               />
             </div>
 
-            {/* RIGHT: Marble Gate */}
+            {/* RIGHT — Marble */}
             <div
-              className={`${isStatic ? "pointer-events-auto" : "pointer-events-none"}
-                          absolute right-[6%] top-1/2 -translate-y-1/2 w-[18%] h-[40%]`}
+              className={`${
+                isStatic ? "pointer-events-auto" : "pointer-events-none"
+              } absolute right-[6%] top-1/2 -translate-y-1/2 w-[18%] h-[42%]`}
               onMouseEnter={() => beginZone("mes")}
               onMouseLeave={() => endZone("mes")}
             >
@@ -168,68 +213,34 @@ export default function TempleHome() {
                 ringOn={ringOn.mes}
                 labelOn={labelOn.mes}
                 label="marble mEs"
-                tone="marble"
                 onClick={() => nav("/measures/mes")}
               />
             </div>
 
-            {/* CENTER ALTAR EXIT (Portal) */}
+            {/* BOTTOM — Return to Portal */}
             <div
-              className={`${isStatic ? "pointer-events-auto" : "pointer-events-none"}
-                          absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                          h-[22%] w-[22%]`}
+              className={`${
+                isStatic ? "pointer-events-auto" : "pointer-events-none"
+              } absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[34%] h-[12%]`}
               onMouseEnter={() => beginZone("exit")}
               onMouseLeave={() => endZone("exit")}
             >
-              <button
-                type="button"
+              <ZonePill
+                ringOn={ringOn.exit}
+                labelOn={labelOn.exit}
+                label="return to portal"
                 onClick={() => nav("/")}
-                className="absolute inset-0"
-                aria-label="Exit temple to Portal"
-              >
-                {/* ring 1 */}
-                <div
-                  className={`pointer-events-none absolute inset-0 transition-all duration-300 ${
-                    ringOn.exit ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                  }`}
-                >
-                  <div className="absolute inset-0 rounded-full border border-[rgba(120,190,255,0.25)] bg-black/10 backdrop-blur-[1px]" />
-                  <div className="absolute inset-0 rounded-full shadow-[0_0_55px_rgba(80,140,255,0.14)]" />
-                </div>
-
-                {/* ring 2 (linger) */}
-                <div
-                  className={`pointer-events-none absolute -inset-5 transition-all duration-500 ${
-                    labelOn.exit ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                  }`}
-                >
-                  <div className="absolute inset-0 rounded-full border border-[rgba(45,212,191,0.18)]" />
-                  <div className="absolute inset-0 rounded-full blur-2xl bg-[radial-gradient(circle,rgba(45,212,191,0.10),transparent_65%)]" />
-                </div>
-
-                {/* label (ritual quiet) */}
-                <div
-                  className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                    labelOn.exit ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <div className="text-center px-2">
-                    <div className="font-sans text-[10px] tracking-[0.34em] uppercase text-stone-200/70">
-                      return to portal
-                    </div>
-                  </div>
-                </div>
-              </button>
+              />
             </div>
 
             {/* passive hint */}
             <div
-              className={`pointer-events-none absolute left-0 right-0 bottom-3 text-center transition-opacity duration-300 ${
+              className={`pointer-events-none absolute left-0 right-0 bottom-2 text-center transition-opacity duration-300 ${
                 isStatic && !activeZone ? "opacity-100" : "opacity-0"
               }`}
             >
               <div className="font-sans text-[10px] tracking-[0.32em] uppercase text-stone-200/40">
-                Enter a gate to begin
+                hover a threshold to reveal it
               </div>
             </div>
           </div>
@@ -239,43 +250,27 @@ export default function TempleHome() {
   );
 }
 
-/** Top “pill” zone */
+/** Pill zone (top + bottom) */
 function ZonePill({
   ringOn,
   labelOn,
   label,
-  tone,
   onClick,
 }: {
   ringOn: boolean;
   labelOn: boolean;
   label: string;
-  tone: "obsidian" | "crystal" | "marble";
   onClick: () => void;
 }) {
-  const border =
-    tone === "obsidian"
-      ? "border-white/10"
-      : tone === "crystal"
-      ? "border-[rgba(45,212,191,0.22)]"
-      : "border-[rgba(230,230,230,0.16)]";
-
-  const glow =
-    tone === "obsidian"
-      ? "shadow-[0_0_55px_rgba(255,255,255,0.06)]"
-      : tone === "crystal"
-      ? "shadow-[0_0_60px_rgba(45,212,191,0.14)]"
-      : "shadow-[0_0_60px_rgba(230,230,230,0.10)]";
-
   return (
     <button type="button" onClick={onClick} className="absolute inset-0">
       <div
-        className={`pointer-events-none absolute inset-0 rounded-[999px] transition-all duration-300 ${
+        className={`pointer-events-none absolute inset-0 rounded-full transition-all duration-300 ${
           ringOn ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className={`absolute inset-0 rounded-[999px] border ${border} bg-black/12 backdrop-blur-[1px]`} />
-        <div className={`absolute inset-0 rounded-[999px] ${glow}`} />
+        <div className="absolute inset-0 rounded-full border border-white/10 bg-black/15 backdrop-blur" />
+        <div className="absolute inset-0 rounded-full shadow-[0_0_60px_rgba(255,255,255,0.08)]" />
       </div>
 
       <div
@@ -283,44 +278,26 @@ function ZonePill({
           labelOn ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="rounded-full border border-white/10 bg-black/25 px-5 py-2 backdrop-blur">
-          <span className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/80">
-            {label}
-          </span>
-        </div>
+        <span className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/85">
+          {label}
+        </span>
       </div>
     </button>
   );
 }
 
-/** Side “rail” zones */
+/** Side rails */
 function ZoneRail({
   ringOn,
   labelOn,
   label,
-  tone,
   onClick,
 }: {
   ringOn: boolean;
   labelOn: boolean;
   label: string;
-  tone: "obsidian" | "crystal" | "marble";
   onClick: () => void;
 }) {
-  const border =
-    tone === "crystal"
-      ? "border-[rgba(45,212,191,0.18)]"
-      : tone === "marble"
-      ? "border-white/10"
-      : "border-white/8";
-
-  const glow =
-    tone === "crystal"
-      ? "shadow-[0_0_60px_rgba(45,212,191,0.10)]"
-      : tone === "marble"
-      ? "shadow-[0_0_60px_rgba(230,230,230,0.08)]"
-      : "shadow-[0_0_55px_rgba(255,255,255,0.05)]";
-
   return (
     <button type="button" onClick={onClick} className="absolute inset-0">
       <div
@@ -328,8 +305,8 @@ function ZoneRail({
           ringOn ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className={`absolute inset-0 rounded-2xl border ${border} bg-black/10 backdrop-blur-[1px]`} />
-        <div className={`absolute inset-0 rounded-2xl ${glow}`} />
+        <div className="absolute inset-0 rounded-2xl border border-white/10 bg-black/10 backdrop-blur" />
+        <div className="absolute inset-0 rounded-2xl shadow-[0_0_60px_rgba(255,255,255,0.06)]" />
       </div>
 
       <div
@@ -337,11 +314,9 @@ function ZoneRail({
           labelOn ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="rounded-full border border-white/10 bg-black/25 px-4 py-2 backdrop-blur">
-          <span className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/75">
-            {label}
-          </span>
-        </div>
+        <span className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/75">
+          {label}
+        </span>
       </div>
     </button>
   );

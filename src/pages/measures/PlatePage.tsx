@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReturnGlyph from "@/components/measures/ReturnGlyph";
-import { MEASURES_ASSETS } from "@/pages/measures/measuresAssets";
+import { MEASURES_ASSETS, type GateId } from "@/pages/measures/measuresAssets";
 
 export type MeasuresSectionId = "gates" | "epithets" | "mes";
 
@@ -18,30 +18,46 @@ type PlateAsset = {
   thumb?: string;
 };
 
+function normalizeGateId(raw?: string): GateId | null {
+  if (!raw) return "gate1";
+
+  // allow "gate1" or "1"
+  if (raw.startsWith("gate")) return raw as GateId;
+  if (/^\d+$/.test(raw)) return (`gate${raw}` as GateId);
+
+  return null;
+}
+
 export default function PlatePage({ section }: Props) {
   const nav = useNavigate();
-  const params = useParams();
-  const n = params.n; // from /measures/gates/:n
+
+  // expects /measures/gates/:gateId where gateId is "gate1" (or "1")
+  const { gateId } = useParams<{ gateId: string }>();
+  const id = normalizeGateId(gateId);
+
   const [aspect, setAspect] = useState<"rendered" | "original">("rendered");
 
   const plate: PlateAsset | null = useMemo(() => {
-    if (section === "gates") {
-      // For now: only Obsidian Gate 1 is wired.
-      if (n === "1") {
-        return {
-          title: "Obsidian Gate I",
-          subtitle: "Descent & Release",
-          rendered: MEASURES_ASSETS.gates.obsidian.gate1.still,
-          original: MEASURES_ASSETS.gates.obsidian.gate1.original,
-          thumb: MEASURES_ASSETS.gates.obsidian.gate1.thumb,
-        };
-      }
-      return null;
-    }
+    if (section !== "gates") return null;
+    if (!id) return null;
 
-    // Future: epithets + mes
-    return null;
-  }, [section, n]);
+    const p = MEASURES_ASSETS.gates.obsidian.plates[id];
+
+    // if nothing is wired yet -> sealed
+    if (!p?.still && !p?.original) return null;
+
+    // only gate1 is "open" right now (optional lock)
+    const enabled = id === "gate1";
+    if (!enabled) return null;
+
+    return {
+      title: "Obsidian Gate I",
+      subtitle: "Descent & Release",
+      rendered: p.still ?? p.original ?? "",
+      original: p.original,
+      thumb: p.thumb,
+    };
+  }, [section, id]);
 
   if (!plate) {
     return (
@@ -67,7 +83,10 @@ export default function PlatePage({ section }: Props) {
     );
   }
 
-  const activeSrc = aspect === "rendered" ? plate.rendered : plate.original ?? plate.rendered;
+  const activeSrc =
+    aspect === "rendered"
+      ? plate.rendered
+      : plate.original ?? plate.rendered;
 
   return (
     <main className="min-h-screen bg-obsidian">
@@ -87,7 +106,7 @@ export default function PlatePage({ section }: Props) {
               index
             </button>
 
-            {/* Aspects (2 each) */}
+            {/* Aspects */}
             <div className="ml-2 flex items-center rounded-full border border-white/10 bg-black/20 p-1">
               <AspectButton
                 active={aspect === "rendered"}
@@ -129,13 +148,11 @@ export default function PlatePage({ section }: Props) {
             draggable={false}
             className="w-full h-auto object-contain"
           />
-
-          {/* subtle vignette */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(0,0,0,0),rgba(0,0,0,0.55)_70%,rgba(0,0,0,0.85)_100%)]" />
         </div>
 
-        {/* Gate I attribute (optional, but nice on the plate too) */}
-        {section === "gates" && n === "1" ? (
+        {/* Gate I attribute */}
+        {section === "gates" && id === "gate1" ? (
           <div className="mt-10 max-w-3xl border-l border-white/10 pl-5">
             <div className="font-serif text-xl text-stone-200 leading-relaxed">
               From the Great Above, she opened her ear to the Great Below.
