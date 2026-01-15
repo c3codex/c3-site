@@ -3,7 +3,7 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import frontmatter from "./measuresfrontmatter.md?raw";
 
-export default function MeasuresFrontmatter() {
+export default function measuresfrontmatter() {
   const nav = useNavigate();
   const location = useLocation();
   const next = (location.state as any)?.next ?? "/measures/gates";
