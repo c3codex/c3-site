@@ -111,7 +111,7 @@ const App: React.FC = () => {
   <Route index element={<TempleHome />} />
 
   {/* frontmatter */}
-  <Route path="frontmatter" element={<MeasuresFrontmatter/>} />
+  <Route path="frontmatter" element={<MeasuresFrontmatter />} />
 
   {/* Obsidian entry = Kumarrah passage -> index overlay */}
   <Route path="gates" element={<ObsidianGateIntro />} />
