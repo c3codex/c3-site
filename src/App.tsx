@@ -1,4 +1,4 @@
-import React from "react";
+uresimport React from "react";
 import { Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 
@@ -25,7 +25,7 @@ import MarbleGateIntro from "@/pages/measures/mes/MarbleGateIntro";
 // other
 import NotFound from "@/pages/NotFound";
 // ✅ use alias import (matches the rest of the project)
-import MeasuresFrontmatter from "@/pages/measures/MeasuresFrontmatter";
+import MeasuresFrontmatter from "@/pages/measures/measuresfrontmatter";
 
 const App: React.FC = () => {
   return (
@@ -110,7 +110,7 @@ const App: React.FC = () => {
   <Route index element={<TempleHome />} />
 
   {/* frontmatter */}
-  <Route path="frontmatter" element={<MeasuresFrontmatter />} />
+  <Route path="frontmatter" element={<measuresfrontmatter />} />
 
   {/* Obsidian entry = Kumarrah passage -> index overlay */}
   <Route path="gates" element={<ObsidianGateIntro />} />
