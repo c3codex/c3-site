@@ -1,16 +1,9 @@
 // src/pages/measures/measuresfrontmatter.tsx
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import frontmatter from "./measuresfrontmatter.md?raw";
+import MeasuresFrontMatter  from "./measuresfrontmatter.md?raw";
 
-function measuresfrontmatter() {
-  return (
-    <section className="prose prose-invert max-w-none">
-      <div dangerouslySetInnerHTML={{ __html: frontmatter }} />
-    </section>
-  );
-}
-
-export default function MeasuresFrontmatter() {
+export default function measuresfrontmatter() {
   const nav = useNavigate();
   const location = useLocation();
   const next = (location.state as any)?.next ?? "/measures/gates";
@@ -28,7 +21,7 @@ export default function MeasuresFrontmatter() {
 
         {/* TEXT (MD) */}
         <article className="prose prose-invert max-w-none whitespace-pre-wrap leading-relaxed">
-          {frontmatter}
+          {MeasuresFrontMatter}
         </article>
 
         {/* EPIGRAPH IMAGE */}

@@ -24,7 +24,6 @@ import MarbleGateIntro from "@/pages/measures/mes/MarbleGateIntro";
 
 // other
 import NotFound from "@/pages/NotFound";
-import measuresfrontmatter from "./pages/measures/measuresfrontmatter";
 // ✅ use alias import (matches the rest of the project)
 import MeasuresFrontmatter from "@/pages/measures/measuresfrontmatter";
 
