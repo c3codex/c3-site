@@ -24,8 +24,9 @@ import MarbleGateIntro from "@/pages/measures/mes/MarbleGateIntro";
 
 // other
 import NotFound from "@/pages/NotFound";
+import measuresfrontmatter from "./pages/measures/measuresfrontmatter";
 // ✅ use alias import (matches the rest of the project)
-import MeasuresFrontmatter from "@/pages/measures/MeasuresFrontmatter";
+import MeasuresFrontmatter from "@/pages/measures/measuresfrontmatter";
 
 const App: React.FC = () => {
   return (
@@ -110,7 +111,7 @@ const App: React.FC = () => {
   <Route index element={<TempleHome />} />
 
   {/* frontmatter */}
-  <Route path="frontmatter" element={<MeasuresFrontmatter />} />
+  <Route path="frontmatter" element={<MeasuresFrontmatter/>} />
 
   {/* Obsidian entry = Kumarrah passage -> index overlay */}
   <Route path="gates" element={<ObsidianGateIntro />} />

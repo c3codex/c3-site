@@ -1,7 +1,14 @@
-// src/pages/measures/MeasuresFrontmatter.tsx
-import React from "react";
+// src/pages/measures/measuresfrontmatter.tsx
 import { useLocation, useNavigate } from "react-router-dom";
-import frontmatter from "./measures-frontmatter.md?raw";
+import frontmatter from "./measuresfrontmatter.md?raw";
+
+function measuresfrontmatter() {
+  return (
+    <section className="prose prose-invert max-w-none">
+      <div dangerouslySetInnerHTML={{ __html: frontmatter }} />
+    </section>
+  );
+}
 
 export default function MeasuresFrontmatter() {
   const nav = useNavigate();
