@@ -1,0 +1,17 @@
+/* typography.css */
+
+.font-cinzel {
+  font-family: "Cinzel", serif;
+}
+
+.font-inter {
+  font-family: "Inter", sans-serif;
+}
+
+.text-bone {
+  color: #eae6df;
+}
+
+.text-muted {
+  color: #b8b5ae;
+}
