@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MEASURES_ASSETS } from "@/pillars/measures/measuresAssets";
 import MeasuresReturnGlyph from "@/pillars/measures/components/MeasuresReturnGlyph";
+import { useMeasuresAudioBus } from "@/pillars/measures/audio/MeasuresAudioBusProvider";
 
 type GateDef = {
   id: number;
@@ -14,10 +15,34 @@ type GateDef = {
 const KUMURRAH_DURATION_MS = 6200;
 const FADE_MS = 1200;
 
+// optional: soften bed during the video “encounter” then restore on index
+const DUCK_DURING_VIDEO = true;
+
 export default function ObsidianGateIndex() {
   const nav = useNavigate();
+  const bus = useMeasuresAudioBus();
+
   const [phase, setPhase] = useState<"video" | "index">("video");
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // ✅ AUDIO: start obsidian bed for the whole index page
+  useEffect(() => {
+    bus.setObsidianActive(true);
+    if (DUCK_DURING_VIDEO) bus.duck(); // keeps Kumurrah cinematic + not “too present”
+    return () => {
+      // Only turn off if you truly want bed to stop when leaving index.
+      // If you want continuous bed across index -> plate, KEEP IT ON elsewhere too.
+      // We do keep it on in plates/intro via their own mount hooks.
+      // So here we *don’t* force off; we just restore so it doesn’t stay ducked.
+      bus.restore();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ AUDIO: restore bed once the index still is fully available
+  useEffect(() => {
+    if (phase === "index") bus.restore();
+  }, [phase, bus]);
 
   useEffect(() => {
     const t = window.setTimeout(() => setPhase("index"), KUMURRAH_DURATION_MS);

@@ -8,6 +8,16 @@ export const MEASURES_ASSETS = {
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/templehome.mp4",
   },
 
+  audio: {
+    obsidianBed:
+      "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/obsidian_bed.wav",
+    crystalBed:
+      "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/crystal_bed.wav",
+    marbleBed:
+      "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/marble_bed.wav",
+  },
+
+
   obsidianEpigraph: {
     still:
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/obsidianepigraph.webp",
@@ -15,7 +25,6 @@ export const MEASURES_ASSETS = {
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/ObsidianEpigraph.mp4",
   },
 
-  // Obsidian Gates Index (the image with 8 panels)
   obsidianIndex: {
     still:
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/obsidianIndex.webp",
@@ -26,27 +35,25 @@ export const MEASURES_ASSETS = {
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/measuresExhibition.webp",
   },
 
-   syndrosGuideGlyph: {
-    thumb:
-      "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/syndrosReturnglyph_thumb.webp",
-  },
-
   MeasuresReturnGlyph: {
     jeweledSeal:
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/%20%20MeasuresReturn_thumb.webp",
   },
 
-  // Kumurrah encounter (video that dissolves into the index)
+  // ✅ ADD THIS (guide glyph)
+  syndros: {
+    thumb:
+      "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/syndrosReturnglyph_thumb.webp",
+  },
+
   kumurrah: {
     still:
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/Kumurrah.webp",
     animated:
       "https://xttrboiohqzusyaneuaw.supabase.co/storage/v1/object/public/Measures-open/Kumurrahpassage.mp4",
 
-    // Route base used by the Obsidian plate pages
     plateBase: "/measures/gates",
 
-    // Individual gate plates (only gate1 exists so far)
     plates: {
       gate0: {
         animated:
@@ -58,4 +65,4 @@ export const MEASURES_ASSETS = {
       },
     },
   },
-} 
+} as const;

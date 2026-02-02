@@ -3,11 +3,17 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MEASURES_ASSETS } from "@/pillars/measures/measuresAssets";
 import MeasuresReturnGlyph from "@/pillars/measures/components/MeasuresReturnGlyph";
+import EncounterStage, { EncounterPhase } from "@/pillars/measures/components/EncounterStage";
 
 type Step = 0 | 1 | 2 | 3; // 3 plaques
 type PanelMode = "closed" | "peek" | "open";
 
-const ENCOUNTER_PAUSE_MS = 2400;
+/**
+ * Canonical Antechamber timing.
+ * - Encounter pause governs when we allow plaque peek + stagger.
+ * - Keep this as the project-wide template.
+ */
+const ENCOUNTER_PAUSE_MS = 1100;
 const PLAQUE_STAGGER_MS = 650;
 
 export default function MeasuresExhibition() {
@@ -16,6 +22,7 @@ export default function MeasuresExhibition() {
   const [panelMode, setPanelMode] = useState<PanelMode>("closed");
   const [step, setStep] = useState<Step>(0);
   const [readyActions, setReadyActions] = useState(false);
+  const [phase, setPhase] = useState<EncounterPhase>("arrive");
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -49,18 +56,14 @@ export default function MeasuresExhibition() {
     );
   };
 
-  // auto peek after delay
+  // When EncounterStage enters READY, we auto-peek and stagger.
   useEffect(() => {
-    clearTimers();
-    const t = window.setTimeout(() => {
-      setPanelMode("peek");
-      startStagger();
-    }, ENCOUNTER_PAUSE_MS);
-
-    timersRef.current.push(t);
+    if (phase !== "ready") return;
+    setPanelMode("peek");
+    startStagger();
     return () => clearTimers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [phase]);
 
   // ESC collapses
   useEffect(() => {
@@ -77,7 +80,6 @@ export default function MeasuresExhibition() {
       const t = window.setTimeout(() => collapseBtnRef.current?.focus(), 30);
       return () => window.clearTimeout(t);
     }
-    return;
   }, [panelMode]);
 
   const expandPanel = () => setPanelMode("open");
@@ -87,7 +89,7 @@ export default function MeasuresExhibition() {
     panelMode === "peek"
       ? "max-h-[42svh]"
       : panelMode === "open"
-      ? "max-h-[78svh]"
+      ? "max-h-[74svh]"
       : "max-h-0";
 
   const panelOpacity =
@@ -101,24 +103,17 @@ export default function MeasuresExhibition() {
       : "measures-stage measures-stage-entered";
 
   return (
-    <section className="relative h-[100svh] w-full overflow-hidden bg-obsidian">
-      {/* HERO MEDIA */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          src={MEASURES_ASSETS.exhibition.hero}
-          alt="Measures of Inanna — Exhibition"
-          draggable={false}
-          className="h-[96svh] w-[min(98vw,1500px)] object-contain select-none"
-        />
-      </div>
-
+    <EncounterStage
+      stillSrc={MEASURES_ASSETS.exhibition.hero}
+      alt="Measures of Inanna — Exhibition"
+      mediaFit="contain"
+      settleFadeMs={900}
+      encounterPauseMs={ENCOUNTER_PAUSE_MS}
+      onPhaseChange={setPhase}
+      topLeft={<MeasuresReturnGlyph to="/measures" ariaLabel="Return to Temple" />}
+    >
       {/* Vignette */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(0,0,0,0.00),rgba(0,0,0,0.55)_72%,rgba(0,0,0,0.88)_100%)]" />
-
-      {/* Return to Temple */}
-      <div className="absolute left-6 top-6 z-40">
-        <MeasuresReturnGlyph to="/measures" ariaLabel="Return to Temple" />
-      </div>
 
       {/* Expand button (only when collapsed) */}
       {panelMode === "closed" && (
@@ -150,39 +145,39 @@ export default function MeasuresExhibition() {
         <div className="mx-auto w-full max-w-[820px] px-6 pt-[88px] md:px-10 md:pt-[92px]">
           <div
             className={[
-              "relative", // anchors the collapse button
+              "relative",
               panelMotion,
               panelMaxH,
               "overflow-hidden transition-[max-height,opacity] duration-700",
-              "rounded-2xl border border-white/10 bg-black/55 shadow-[0_0_60px_rgba(0,0,0,0.55)]",
+              // lighter plaque opacity + smaller visual dominance:
+              "rounded-2xl border border-white/10 bg-black/42 shadow-[0_0_60px_rgba(0,0,0,0.55)]",
               "backdrop-blur-sm",
             ].join(" ")}
             role="region"
             aria-label="Exhibition text panel"
-          >{panelMode !== "closed" && (
-  <button
-    ref={collapseBtnRef}
-    type="button"
-    onClick={collapsePanel}
-    aria-label="Collapse exhibition text"
-    className="fixed right-4 top-4 z-[9999] min-h-[44px] rounded-full
-               border border-white/25 bg-black/55 px-5 py-2
-               font-sans text-[10px] tracking-[0.35em] uppercase text-stone-100
-               backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.6)]
-               transition hover:border-white/40"
-  >
-    collapse
-  </button>
-)}
-
-           
+          >
+            {panelMode !== "closed" && (
+              <button
+                ref={collapseBtnRef}
+                type="button"
+                onClick={collapsePanel}
+                aria-label="Collapse exhibition text"
+                className="absolute right-4 top-4 z-50 min-h-[44px] rounded-full
+                           border border-white/25 bg-black/45 px-5 py-2
+                           font-sans text-[10px] tracking-[0.35em] uppercase text-stone-100
+                           backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.6)]
+                           transition hover:border-white/40"
+              >
+                collapse
+              </button>
+            )}
 
             {/* Body */}
             <div className="max-h-[70svh] overflow-y-auto px-6 pb-8 pt-6 md:px-10 md:pb-10 md:pt-8">
               <div className="space-y-8">
                 {/* PLAQUE 1 */}
                 <div className={`transition-opacity duration-700 ${step >= 1 ? "opacity-100" : "opacity-0"}`}>
-                  <div className="rounded-2xl border border-white/10 bg-black/25 p-6">
+                  <div className="rounded-2xl border border-white/10 bg-black/18 p-6">
                     <div className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/60">
                       Exhibition Statement
                     </div>
@@ -218,7 +213,7 @@ export default function MeasuresExhibition() {
 
                 {/* PLAQUE 2 */}
                 <div className={`transition-opacity duration-700 ${step >= 2 ? "opacity-100" : "opacity-0"}`}>
-                  <div className="rounded-2xl border border-white/10 bg-black/22 p-6">
+                  <div className="rounded-2xl border border-white/10 bg-black/16 p-6">
                     <div className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/60">
                       On Inanna
                     </div>
@@ -246,7 +241,7 @@ export default function MeasuresExhibition() {
 
                 {/* PLAQUE 3 */}
                 <div className={`transition-opacity duration-700 ${step >= 3 ? "opacity-100" : "opacity-0"}`}>
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
+                  <div className="rounded-2xl border border-white/10 bg-black/14 p-6">
                     <div className="font-sans text-[10px] tracking-[0.35em] uppercase text-stone-200/60">
                       Material Structure
                     </div>
@@ -303,11 +298,8 @@ export default function MeasuresExhibition() {
                       <br />
                       She establishes them.
                     </p>
-
                   </div>
                 </div>
-
-
 
                 {/* ACTIONS */}
                 <div className={`transition-opacity duration-700 ${readyActions ? "opacity-100" : "opacity-0"}`}>
@@ -344,7 +336,7 @@ export default function MeasuresExhibition() {
               </div>
             </div>
 
-            {/* Expand control for peek mode (optional, but useful on mobile) */}
+            {/* Expand control for peek mode */}
             {panelMode === "peek" && (
               <div className="border-t border-white/10 px-6 py-4 md:px-10">
                 <button
@@ -361,7 +353,6 @@ export default function MeasuresExhibition() {
           </div>
         </div>
       </div>
-    </section>
+    </EncounterStage>
   );
 }
-

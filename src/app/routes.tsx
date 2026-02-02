@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 
 import HeroPriceless from "@/components/layout/HeroPricelessGallery";
-import MeasuresShell from "@/app/MeasuresShell";
+import MeasuresShell from "@/pillars/measures/MeasuresShell";
 
 // Pillar heroes
 import HeroGallery from "@/components/layout/HeroGallery";

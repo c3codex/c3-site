@@ -1,11 +1,13 @@
 // src/pillars/measures/gates/ObsidianGatePlate.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { MEASURES_ASSETS } from "@/pillars/measures/measuresAssets";
 import MeasuresReturnGlyph from "@/pillars/measures/components/MeasuresReturnGlyph";
 
 import AspectEdgeLayer from "@/pillars/measures/components/aspects/AspectEdgeLayer";
 import { queenOfHeavenAspects } from "@/pillars/measures/data/queenOfHeavenAspects";
+
+import { useMeasuresAudioBus } from "@/pillars/measures/audio/MeasuresAudioBusProvider";
 
 const AUTO_STATIC_AFTER_MS = 5200; // video -> begin fade
 const FADE_MS = 900; // crossfade duration
@@ -14,6 +16,10 @@ const PLAQUE_OPEN_DELAY_MS = AUTO_STATIC_AFTER_MS + ENCOUNTER_PAUSE_MS;
 
 export default function ObsidianGatePlate() {
   const nav = useNavigate();
+  const { gateId } = useParams<{ gateId?: string }>();
+
+  const bus = useMeasuresAudioBus();
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -24,25 +30,41 @@ export default function ObsidianGatePlate() {
   const [plaqueOpen, setPlaqueOpen] = useState(false);
   const [plaqueMinimized, setPlaqueMinimized] = useState(false);
 
-  // NEW: toggle for edge aspects via Syndros guide glyph
+  // toggle for edge aspects via Syndros guide glyph
   const [aspectsOn, setAspectsOn] = useState(false);
 
+  // 🔁 Plate selection (right now only gate0 exists)
+  // When you add more plates, switch on gateId here.
   const plate = MEASURES_ASSETS.kumurrah.plates.gate0;
 
-  // routes (keep aligned to Measures)
-  const base = MEASURES_ASSETS.kumurrah.plateBase; // "/measures/gates"
-  const continueTo = `${base}/gate1`;
+  // ✅ ROUTES: aligned to MeasuresShell:
+  // <Route path="gates/:gateId" element={<ObsidianGatePlate />} />
+  const continueTo = "/measures/gates/gate1";
 
+  // --- AUDIO: keep obsidian bed active through plates, duck during plaque ---
+  useEffect(() => {
+    bus.setObsidianActive(true);
+    return () => {
+      // don’t hard-stop here; Temple/Exhibition should explicitly turn it off.
+      bus.restore();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (plaqueOpen && !plaqueMinimized) bus.duck();
+    else bus.restore();
+  }, [plaqueOpen, plaqueMinimized, bus]);
+
+  // --- media timing: video -> still, then plaques open ---
   useEffect(() => {
     const v = videoRef.current;
     if (v) v.playbackRate = 0.85;
 
-    // begin crossfade video -> still
     const t1 = window.setTimeout(() => {
       setShowStill(true);
       setVideoFading(true);
 
-      // after fade completes, fully drop the video layer
       window.setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.pause();
@@ -52,7 +74,6 @@ export default function ObsidianGatePlate() {
       }, FADE_MS);
     }, AUTO_STATIC_AFTER_MS);
 
-    // open plaques after encounter pause
     const t2 = window.setTimeout(() => {
       setPlaqueOpen(true);
       setPlaqueMinimized(false);
@@ -68,6 +89,9 @@ export default function ObsidianGatePlate() {
   }, []);
 
   const showContinueOnMedia = plaqueOpen && plaqueMinimized;
+
+  // Syndros guide glyph asset
+  const syndrosThumb = MEASURES_ASSETS.syndros?.thumb ?? null;
 
   return (
     <section className="relative h-[100svh] w-full overflow-hidden bg-black">
@@ -93,7 +117,7 @@ export default function ObsidianGatePlate() {
           {/* Still fades in under video */}
           <img
             src={plate.still}
-            alt="Queen of Heaven — Plate"
+            alt="Obsidian Gate Plate"
             draggable={false}
             className="h-full w-full object-contain select-none"
             style={{
@@ -143,6 +167,7 @@ export default function ObsidianGatePlate() {
       <div className="absolute bottom-6 left-6 z-30 flex items-center gap-3">
         {!plaqueOpen || plaqueMinimized ? (
           <button
+            type="button"
             onClick={() => {
               setPlaqueOpen(true);
               setPlaqueMinimized(false);
@@ -158,6 +183,7 @@ export default function ObsidianGatePlate() {
 
         {showContinueOnMedia ? (
           <button
+            type="button"
             onClick={() => nav(continueTo)}
             className="rounded-xl bg-white/15 px-4 py-2 text-sm text-stone-100 backdrop-blur hover:bg-white/20 transition"
           >
@@ -167,23 +193,27 @@ export default function ObsidianGatePlate() {
       </div>
 
       {/* SYNDROS GUIDE GLYPH (toggles inscriptions / edge aspects) */}
-      <div className="absolute bottom-6 right-6 z-[65]">
-        <button
-          type="button"
-          onClick={() => setAspectsOn((v) => !v)}
-          aria-label="Reveal inscriptions"
-          className="group pointer-events-auto"
-        >
-          <img
-            src={MEASURES_ASSETS.syndrosGuideGlyph.thumb}
-            alt=""
-            draggable={false}
-            className={`h-10 w-10 transition-opacity duration-500 ${
-              aspectsOn ? "opacity-80" : "opacity-55"
-            } group-hover:opacity-100 animate-pulse`}
-          />
-        </button>
-      </div>
+      {syndrosThumb && (
+        <div className="absolute bottom-6 right-6 z-[65]">
+          <button
+            type="button"
+            onClick={() => setAspectsOn((v) => !v)}
+            aria-label="Reveal inscriptions"
+            className="group pointer-events-auto"
+          >
+            <img
+              src={syndrosThumb}
+              alt=""
+              draggable={false}
+              className={[
+                "h-10 w-10 transition-opacity duration-500",
+                aspectsOn ? "opacity-85" : "opacity-55",
+                "group-hover:opacity-100 animate-pulse",
+              ].join(" ")}
+            />
+          </button>
+        </div>
+      )}
 
       {/* PLAQUE OVERLAY (less opaque + not full-page, so it doesn't cut the art) */}
       {plaqueOpen && !plaqueMinimized && (
@@ -196,7 +226,7 @@ export default function ObsidianGatePlate() {
               max-w-2xl
               rounded-2xl
               border border-white/10
-              bg-black/35
+              bg-black/28
               backdrop-blur-lg
               shadow-[0_16px_60px_rgba(0,0,0,0.45)]
               overflow-hidden
@@ -204,11 +234,12 @@ export default function ObsidianGatePlate() {
           >
             {/* plaque header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <div className="text-xs uppercase tracking-[0.3em] text-stone-200">
+              <div className="text-xs uppercase tracking-[0.3em] text-stone-200/90">
                 Queen of Heaven
               </div>
 
               <button
+                type="button"
                 onClick={() => setPlaqueMinimized(true)}
                 className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-stone-100 hover:bg-white/15 transition"
               >
@@ -224,12 +255,11 @@ export default function ObsidianGatePlate() {
             >
               <div className="space-y-4 text-center leading-relaxed">
                 <p>
-                  With the <em>me</em> in her possession, she prepared herself.
+                  With the <em>me</em> in her possession, she prepared herself:
                 </p>
 
                 <p>
-                  She placed the <strong>shugurra</strong>, the crown of the steppe,
-                  upon her head.
+                  She placed the <strong>shugurra</strong>, the crown of the steppe, on her head.
                   <br />
                   She arranged the dark locks of hair across her forehead.
                   <br />
@@ -243,9 +273,9 @@ export default function ObsidianGatePlate() {
                 </p>
 
                 <p>
-                  She daubed her eyes with the ointment called
+                  She daubed her eyes with ointment called
                   <br />
-                  <em>“Let him come, let him come.”</em>
+                  <em>“let him come, let him come.”</em>
                 </p>
 
                 <p>
@@ -267,6 +297,7 @@ export default function ObsidianGatePlate() {
                 {/* Continue at end of plaque */}
                 <div className="pt-5">
                   <button
+                    type="button"
                     onClick={() => nav(continueTo)}
                     className="w-full rounded-xl bg-white/12 px-4 py-3 text-sm text-stone-100 hover:bg-white/18 transition"
                   >
